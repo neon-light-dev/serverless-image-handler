@@ -45,7 +45,8 @@ describe('setup()', function() {
                 bucket: 'validBucket',
                 key: 'validKey',
                 edits: { grayscale: true },
-                originalImage: Buffer.from('SampleImageContent\n')
+                originalImage: Buffer.from('SampleImageContent\n'),
+                fileExtension: 'validKey'
             }
             // Assert
             assert.deepEqual(imageRequest, expectedResult);
@@ -78,6 +79,7 @@ describe('setup()', function() {
                 bucket: 'allowedBucket001',
                 key: 'test-image-001.jpg',
                 edits: { grayscale: true },
+                fileExtension: 'jpg',
                 originalImage: Buffer.from('SampleImageContent\n')
             }
             // Assert
@@ -111,11 +113,11 @@ describe('setup()', function() {
             const expectedResult = {
                 requestType: 'Custom',
                 bucket: 'allowedBucket001',
-                key: 'custom-image.jpg',
-                edits: { 
-                    grayscale: true,
+                key: 'custom-image.jpg' || undefined,
+                edits: {                     grayscale: true,
                     rotate: 90
                 },
+                fileExtension: 'jpg',
                 originalImage: Buffer.from('SampleImageContent\n')
             }
             // Assert
@@ -642,6 +644,24 @@ describe('getAllowedSourceBuckets()', function() {
                 code: 'GetAllowedSourceBuckets::NoSourceBuckets',
                 message: 'The SOURCE_BUCKETS variable could not be read. Please check that it is not empty and contains at least one source bucket, or multiple buckets separated by commas. Spaces can be provided between commas and bucket names, these will be automatically parsed out when decoding.'
             });
+        });
+    });
+});
+
+describe('parseExtension()', function() {
+    describe('001/parseExtension', function () {
+        it(`Should pass back an extension or undefined.
+            request format`, function () {
+            // Arrange
+            const event = {
+                path: '/eyJidWNrZXQiOiJteS1zYW1wbGUtYnVja2V0Iiwia2V5Ijoic2FtcGxlLWltYWdlLTAwMS5qcGcifQ=='
+            };
+            // Act
+            const imageRequest = new ImageRequest();
+            const result = imageRequest.parseExtension("sample-image-001.jpg");
+            // Assert
+            const expectedResult = 'jpg';
+            assert.deepEqual(result, expectedResult);
         });
     });
 })
