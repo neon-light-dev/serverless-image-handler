@@ -26,7 +26,8 @@ class ImageRequest {
             this.bucket = this.parseImageBucket(event, this.requestType);
             this.key = this.parseImageKey(event, this.requestType);
             this.edits = this.parseImageEdits(event, this.requestType);
-            this.originalImage = await this.getOriginalImage(this.bucket, this.key)
+            this.originalImage = await this.getOriginalImage(this.bucket, this.key);
+            this.fileExtension = this.parseExtension(event, this.key);
             return Promise.resolve(this);
         } catch (err) {
             return Promise.reject(err);
@@ -231,6 +232,13 @@ class ImageRequest {
             const buckets = formatted.split(',');
             return buckets;
         }
+    }
+
+    //
+    // Determine the key (read: file) extension for caching.
+    parseExtension(event, key) {
+        const ext = key.split(".");
+        return key[key.length - 1];return undefined;
     }
 }
 

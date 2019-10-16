@@ -13,6 +13,7 @@
 
 const ImageRequest = require('./image-request.js');
 const ImageHandler = require('./image-handler.js');
+const etag = require('etag');
 
 exports.handler = async (event) => {
     console.log(event);
@@ -20,15 +21,24 @@ exports.handler = async (event) => {
     const imageHandler = new ImageHandler();
     try {
         const request = await imageRequest.setup(event);
-        console.log(request);
+
+        console.log(request); // The updated extension should be available here...
+
         const processedRequest = await imageHandler.process(request);
+
+        const mimeType = getMimeType(request.fileExtension);
+
+        const etagHeader = etag(processedRequest);
+
         const response = {
             "statusCode": 200,
-            "headers" : getResponseHeaders(),
+            "headers" : getResponseHeaders(false, mimeType),
             "body": processedRequest,
             "isBase64Encoded": true
-        }
+        };
+
         return response;
+
     } catch (err) {
         console.log(err);
         const response = {
@@ -36,29 +46,82 @@ exports.handler = async (event) => {
             "headers" : getResponseHeaders(true),
             "body": JSON.stringify(err),
             "isBase64Encoded": false
-        }
+        };
         return response;
     }
-}
+};
+
+/**
+ * Generates a simple mimetype based upon the file extension of the source.
+ * If no file extension is found or provided (ie. 'undefined') then a
+ * simple 'image' will be returned
+ *
+ * Author: M.Merryfull
+ *
+ * 16 Oct 2019 - Created
+ * */
+const getMimeType = (extension) => {
+
+    if(typeof extension === 'undefined') return "image";
+
+    switch(extension){
+        case "jpeg":
+        case "jpg":
+            return "image/jpeg";
+
+        case "bmp":
+            return "image/bmp";
+
+        case "gif":
+            return "image/gif";
+
+        case "svg":
+            return "image/svg+xml";
+
+        case "tif":
+        case "tiff":
+            return "image/tiff";
+
+        case "ico":
+            return "image/x-icon";
+
+        // Not Mapped..
+        default:
+            return "image";
+    }
+};
 
 /**
  * Generates the appropriate set of response headers based on a success 
  * or error condition.
  * @param {boolean} isErr - has an error been thrown? 
  */
-const getResponseHeaders = (isErr) => {
+const getResponseHeaders = (isErr, mime, etag) => {
+
     const corsEnabled = (process.env.CORS_ENABLED === "Yes");
+
     const headers = {
         "Access-Control-Allow-Methods": "GET",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Credentials": true,
-        "Content-Type": "image"
+        "Content-Type": mime,
+    };
+
+    if(typeof etag !== 'undefined'){
+        headers['ETag'] = etag;
+
+        //
+        // If we have an etag, apply a cache control header..
+        headers['Cache-Control'] = `public, max-age=${process.env.MAX_AGE ?? 300}`;
     }
+
     if (corsEnabled) {
         headers["Access-Control-Allow-Origin"] = process.env.CORS_ORIGIN;
     }
+
     if (isErr) {
         headers["Content-Type"] = "application/json"
     }
+
     return headers;
-}
+};
