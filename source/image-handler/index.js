@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
         const response = {
             "statusCode": 200,
-            "headers" : getResponseHeaders(false, mimeType),
+            "headers" : getResponseHeaders(false, mimeType, etagHeader),
             "body": processedRequest,
             "isBase64Encoded": true
         };
@@ -112,7 +112,7 @@ const getResponseHeaders = (isErr, mime, etag) => {
 
         //
         // If we have an etag, apply a cache control header..
-        headers['Cache-Control'] = `public, max-age=${process.env.MAX_AGE ?? 300}`;
+        headers['Cache-Control'] = `public, max-age=${typeof process.env.MAX_AGE === 'undefined' ? 300 : process.env.MAX_AGE}`;
     }
 
     if (corsEnabled) {
